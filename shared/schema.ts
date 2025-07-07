@@ -8,7 +8,7 @@ export const projects = pgTable("projects", {
   originalFileName: text("original_file_name").notNull(),
   fileSize: integer("file_size").notNull(),
   framework: text("framework"),
-  status: text("status").notNull().default("uploaded"), // uploaded, analyzing, building, completed, error
+  status: text("status").notNull().default("uploaded"), // uploaded, extracted, analyzing, analyzed, building, completed, error
   progress: integer("progress").notNull().default(0),
   buildConfig: jsonb("build_config"),
   projectStats: jsonb("project_stats"),

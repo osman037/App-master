@@ -15,7 +15,9 @@ export function ProgressBar({ project }: ProgressBarProps) {
     
     switch (status) {
       case 'uploaded':
-        return 'Project uploaded successfully. Ready for analysis.';
+        return 'Project uploaded successfully...';
+      case 'extracted':
+        return 'Project extracted successfully. Ready for analysis.';
       case 'analyzing':
         return 'Analyzing project structure and dependencies...';
       case 'analyzed':

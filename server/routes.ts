@@ -23,28 +23,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Upload project file
   app.post("/api/projects/upload", upload.single("file"), async (req: RequestWithFile, res) => {
     try {
+      console.log("Upload request received");
+      console.log("File in request:", !!req.file);
+      
       if (!req.file) {
+        console.log("No file in request");
         return res.status(400).json({ error: "No file uploaded" });
       }
 
       const { originalname, buffer, size } = req.file;
+      console.log(`File details: ${originalname}, size: ${size}`);
       
       // Validate file type
       if (!originalname.endsWith('.zip')) {
         return res.status(400).json({ error: "Only ZIP files are supported" });
       }
 
-      // Save uploaded file
-      const filename = `${Date.now()}_${originalname}`;
-      const filePath = await fileManager.saveUploadedFile(buffer, filename);
-
-      // Create project record
+      // Create project record first
       const project = await storage.createProject({
         name: originalname.replace('.zip', ''),
         originalFileName: originalname,
         fileSize: size,
         status: "uploaded",
-        progress: 0,
+        progress: 10,
       });
 
       // Add initial log
@@ -54,10 +55,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Project uploaded: ${originalname} (${size} bytes)`,
       });
 
-      res.json({ project, filePath });
-    } catch (error) {
+      // Save uploaded file
+      const filename = `${Date.now()}_${originalname}`;
+      const filePath = await fileManager.saveUploadedFile(buffer, filename);
+
+      // Get project directory and extract ZIP immediately
+      const projectDir = await fileManager.getProjectDirectory(project.id);
+      
+      await storage.addBuildLog({
+        projectId: project.id,
+        level: "info",
+        message: "Extracting ZIP file...",
+      });
+
+      // Extract ZIP file to project directory
+      await fileManager.extractZip(filePath, projectDir);
+
+      await storage.addBuildLog({
+        projectId: project.id,
+        level: "info",
+        message: "ZIP file extracted successfully",
+      });
+
+      // Update project status
+      await storage.updateProject(project.id, {
+        status: "extracted",
+        progress: 25,
+      });
+
+      res.json({ project: await storage.getProject(project.id) });
+    } catch (error: any) {
       console.error("Upload error:", error);
-      res.status(500).json({ error: "Upload failed" });
+      res.status(500).json({ error: `Upload failed: ${error?.message || 'Unknown error'}` });
     }
   });
 
@@ -111,11 +140,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Starting project analysis...",
       });
 
-      // Get project directory and extract ZIP
+      // Get project directory (files should already be extracted during upload)
       const projectDir = await fileManager.getProjectDirectory(projectId);
-      const zipPath = path.join(process.cwd(), 'uploads', `${Date.now()}_${project.originalFileName}`);
-      
-      await fileManager.extractZip(zipPath, projectDir);
 
       // Analyze project
       const analysis = await projectAnalyzer.analyzeProject(projectDir);

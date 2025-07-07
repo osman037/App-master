@@ -4,7 +4,7 @@ export interface Project {
   originalFileName: string;
   fileSize: number;
   framework?: string;
-  status: 'uploaded' | 'analyzing' | 'analyzed' | 'building' | 'completed' | 'error';
+  status: 'uploaded' | 'extracted' | 'analyzing' | 'analyzed' | 'building' | 'completed' | 'error';
   progress: number;
   buildConfig?: any;
   projectStats?: ProjectStats;

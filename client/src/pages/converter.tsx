@@ -43,7 +43,7 @@ export default function Converter() {
   };
 
   const handleStartConversion = () => {
-    if (currentProject) {
+    if (currentProject && currentProject.status === 'extracted') {
       analyzeProject(currentProject.id);
     }
   };
