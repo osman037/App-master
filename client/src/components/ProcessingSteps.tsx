@@ -20,20 +20,48 @@ export function ProcessingSteps({ project }: ProcessingStepsProps) {
         return 'pending';
       
       case 'setup':
-        if (project.status === 'building') return 'processing';
+        if (project.status === 'building' && project.progress >= 10 && project.progress < 60) return 'processing';
+        if (project.status === 'building' && project.progress >= 60) return 'completed';
         if (project.status === 'completed') return 'completed';
-        if (project.status === 'error' && project.progress > 50) return 'error';
+        if (project.status === 'error' && project.progress >= 10) return 'error';
         return 'pending';
       
       case 'build':
-        if (project.status === 'building' && project.progress > 60) return 'processing';
+        if (project.status === 'building' && project.progress >= 60) return 'processing';
         if (project.status === 'completed') return 'completed';
-        if (project.status === 'error' && project.progress > 60) return 'error';
+        if (project.status === 'error' && project.progress >= 60) return 'error';
         return 'pending';
       
       default:
         return 'pending';
     }
+  };
+
+  const getDetailedStepStatus = (stepType: string, subStep: string) => {
+    if (!project || project.status !== 'building') return 'pending';
+    
+    if (stepType === 'setup') {
+      switch (subStep) {
+        case 'dependencies':
+          return project.progress >= 10 ? 'completed' : 'pending';
+        case 'missing-files':
+          return project.progress >= 25 ? 'completed' : (project.progress >= 10 ? 'processing' : 'pending');
+        case 'sdk':
+          return project.progress >= 40 ? 'completed' : (project.progress >= 25 ? 'processing' : 'pending');
+        case 'build-tools':
+          return project.progress >= 55 ? 'completed' : (project.progress >= 40 ? 'processing' : 'pending');
+      }
+    } else if (stepType === 'build') {
+      switch (subStep) {
+        case 'precheck':
+          return project.progress >= 70 ? 'completed' : (project.progress >= 55 ? 'processing' : 'pending');
+        case 'compilation':
+          return project.progress >= 85 ? 'completed' : (project.progress >= 70 ? 'processing' : 'pending');
+        case 'verification':
+          return project.progress >= 100 ? 'completed' : (project.progress >= 85 ? 'processing' : 'pending');
+      }
+    }
+    return 'pending';
   };
 
   const getStatusBadge = (status: string) => {

@@ -59,8 +59,21 @@ export class FileManager {
 
   async listFiles(directory: string): Promise<string[]> {
     try {
-      const files = await fs.readdir(directory);
-      return files;
+      const files = await fs.readdir(directory, { withFileTypes: true });
+      return files
+        .filter(dirent => dirent.isFile()) // Only return files, not directories
+        .map(dirent => dirent.name);
+    } catch {
+      return [];
+    }
+  }
+
+  async listDirectories(directory: string): Promise<string[]> {
+    try {
+      const files = await fs.readdir(directory, { withFileTypes: true });
+      return files
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
     } catch {
       return [];
     }
