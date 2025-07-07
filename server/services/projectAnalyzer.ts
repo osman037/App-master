@@ -198,12 +198,34 @@ export class ProjectAnalyzer {
       analysis.buildConfig.hasPubspec = true;
       try {
         const pubspecContent = await this.fileManager.readFile(pubspecPath);
+        
+        // Extract app name, version, and description
+        const nameMatch = pubspecContent.match(/name:\s*(.+)/);
+        const versionMatch = pubspecContent.match(/version:\s*(.+)/);
+        const descriptionMatch = pubspecContent.match(/description:\s*(.+)/);
+        
+        if (nameMatch) {
+          analysis.buildConfig.appName = nameMatch[1].trim();
+          analysis.buildConfig.packageName = `com.flutter.${nameMatch[1].trim().toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        }
+        if (versionMatch) {
+          analysis.buildConfig.version = versionMatch[1].trim();
+        }
+        if (descriptionMatch) {
+          analysis.buildConfig.description = descriptionMatch[1].trim();
+        }
+        
         // Simple YAML parsing for dependencies
         const dependencyMatches = pubspecContent.match(/dependencies:\s*\n((?:\s+\S+:.*\n)*)/);
         if (dependencyMatches) {
           const deps = dependencyMatches[1].match(/^\s+(\S+):/gm);
           analysis.dependencies = deps ? deps.map(d => d.trim().replace(':', '')) : [];
           analysis.projectStats.dependencies = analysis.dependencies.length;
+        }
+        
+        // Check for Flutter assets
+        if (pubspecContent.includes('assets:')) {
+          analysis.buildConfig.hasAssets = true;
         }
       } catch (error) {
         analysis.errors.push('Failed to parse pubspec.yaml');
