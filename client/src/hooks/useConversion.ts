@@ -74,7 +74,7 @@ export const useConversion = (projectId?: number) => {
       const response = await apiRequest('POST', `/api/projects/${projectId}/build`, keystoreData);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       if (data.buildResult && data.buildResult.success) {
         toast({
           title: 'Build Complete',
@@ -87,9 +87,10 @@ export const useConversion = (projectId?: number) => {
           description: data.buildResult?.errors?.join(', ') || 'Failed to build APK.',
         });
       }
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${variables.projectId}`] });
     },
     onError: (error: any) => {
+      console.error('Build error:', error);
       toast({
         variant: 'destructive',
         title: 'Build Failed',
@@ -102,12 +103,16 @@ export const useConversion = (projectId?: number) => {
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: [`/api/projects/${projectId}`],
     enabled: !!projectId,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
   });
 
   // Get build logs
   const { data: logs, isLoading: logsLoading } = useQuery({
     queryKey: [`/api/projects/${projectId}/logs`],
     enabled: !!projectId,
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
   });
 
   // Clear logs
@@ -136,10 +141,18 @@ export const useConversion = (projectId?: number) => {
   }, [uploadMutation]);
 
   const analyzeProject = useCallback((projectId: number) => {
+    // Prevent multiple concurrent analysis
+    if (analyzeMutation.isPending) {
+      return;
+    }
     analyzeMutation.mutate(projectId);
   }, [analyzeMutation]);
 
   const buildApk = useCallback((projectId: number, keystoreData?: any) => {
+    // Prevent multiple concurrent builds
+    if (buildMutation.isPending) {
+      return;
+    }
     buildMutation.mutate({ projectId, keystoreData });
   }, [buildMutation]);
 

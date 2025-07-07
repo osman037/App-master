@@ -26,9 +26,14 @@ export async function apiRequest(
     config.body = JSON.stringify(data);
   }
 
-  const res = await fetch(url, config);
-  await throwIfResNotOk(res);
-  return res;
+  try {
+    const res = await fetch(url, config);
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    console.error(`API request failed: ${method} ${url}`, error);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -60,8 +65,10 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 0, // No retries to prevent infinite loops
     },
     mutations: {
       retry: false,
