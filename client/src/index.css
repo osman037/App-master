@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom styles for APK Converter */
+.converter-gradient {
+  background: linear-gradient(135deg, hsl(207, 90%, 54%) 0%, hsl(207, 90%, 64%) 100%);
+}
+
+.success-gradient {
+  background: linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 76%, 46%) 100%);
+}
+
+.error-gradient {
+  background: linear-gradient(135deg, hsl(0, 84.2%, 60.2%) 0%, hsl(0, 84.2%, 70.2%) 100%);
+}
+
+/* Animation for processing indicators */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+/* Log terminal styling */
+.terminal {
+  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  background: hsl(220, 13%, 18%);
+  color: hsl(220, 14%, 71%);
+}
+
+.terminal-line {
+  line-height: 1.5;
+  padding: 2px 0;
+}
+
+.terminal-timestamp {
+  color: hsl(220, 14%, 46%);
+}
+
+.terminal-level-info {
+  color: hsl(207, 90%, 54%);
+}
+
+.terminal-level-warning {
+  color: hsl(43, 89%, 60%);
+}
+
+.terminal-level-error {
+  color: hsl(0, 84%, 60%);
+}
+
+.terminal-level-success {
+  color: hsl(142, 76%, 46%);
+}
+
+/* Upload zone styling */
+.upload-zone-active {
+  border-color: hsl(207, 90%, 54%);
+  background-color: hsl(207, 90%, 97%);
+}
+
+.upload-zone-active .upload-icon {
+  color: hsl(207, 90%, 54%);
+}
+
+/* Progress bar custom styling */
+.progress-bar {
+  transition: width 0.5s ease-in-out;
+}
+
+.progress-bar.success {
+  background: hsl(142, 76%, 46%);
+}
+
+.progress-bar.error {
+  background: hsl(0, 84%, 60%);
+}
+
+.progress-bar.processing {
+  background: hsl(207, 90%, 54%);
+}
+
+/* Framework badges */
+.framework-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.framework-badge.react-native {
+  background: hsl(207, 90%, 95%);
+  color: hsl(207, 90%, 35%);
+}
+
+.framework-badge.flutter {
+  background: hsl(207, 90%, 95%);
+  color: hsl(207, 90%, 35%);
+}
+
+.framework-badge.android {
+  background: hsl(142, 76%, 95%);
+  color: hsl(142, 76%, 35%);
+}
+
+.framework-badge.cordova {
+  background: hsl(25, 95%, 95%);
+  color: hsl(25, 95%, 35%);
+}
+
+/* Status indicators */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-indicator.pending {
+  background: hsl(220, 14%, 96%);
+  color: hsl(220, 14%, 46%);
+}
+
+.status-indicator.processing {
+  background: hsl(207, 90%, 95%);
+  color: hsl(207, 90%, 35%);
+}
+
+.status-indicator.completed {
+  background: hsl(142, 76%, 95%);
+  color: hsl(142, 76%, 35%);
+}
+
+.status-indicator.error {
+  background: hsl(0, 84%, 95%);
+  color: hsl(0, 84%, 40%);
+}
+
+/* Responsive design helpers */
+@media (max-width: 768px) {
+  .converter-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .converter-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .converter-actions {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
