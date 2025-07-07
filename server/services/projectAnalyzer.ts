@@ -70,7 +70,9 @@ export class ProjectAnalyzer {
           await this.analyzeCordova(projectPath, allFiles, analysis);
           break;
         default:
-          analysis.errors.push('Unsupported framework detected');
+          // Don't treat unknown framework as error - allow manual setup
+          analysis.framework = 'generic-mobile';
+          analysis.errors.push('Framework not automatically detected - will use generic mobile project setup');
       }
 
       analysis.hasValidStructure = analysis.errors.length === 0;
@@ -131,6 +133,14 @@ export class ProjectAnalyzer {
   }
 
   private async analyzeReactNative(projectPath: string, files: string[], analysis: ProjectAnalysis): Promise<void> {
+    // Initialize build config with default flags
+    analysis.buildConfig = {
+      hasPackageJson: false,
+      hasBuildGradle: false,
+      targetSdk: 33,
+      minSdk: 21
+    };
+
     // Check for essential files
     const requiredFiles = ['package.json', 'android/build.gradle', 'android/app/build.gradle'];
     analysis.missingFiles = requiredFiles.filter(file => !files.some(f => f.includes(file)));
@@ -138,6 +148,7 @@ export class ProjectAnalyzer {
     // Parse package.json
     const packageJsonPath = path.join(projectPath, 'package.json');
     if (await this.fileManager.fileExists(packageJsonPath)) {
+      analysis.buildConfig.hasPackageJson = true;
       try {
         const packageJson = JSON.parse(await this.fileManager.readFile(packageJsonPath));
         analysis.dependencies = Object.keys(packageJson.dependencies || {});
@@ -150,14 +161,16 @@ export class ProjectAnalyzer {
     // Parse Android gradle files
     const appGradlePath = path.join(projectPath, 'android/app/build.gradle');
     if (await this.fileManager.fileExists(appGradlePath)) {
+      analysis.buildConfig.hasBuildGradle = true;
       try {
         const gradleContent = await this.fileManager.readFile(appGradlePath);
         const targetSdk = this.extractGradleValue(gradleContent, 'targetSdkVersion');
         const minSdk = this.extractGradleValue(gradleContent, 'minSdkVersion');
         
-        analysis.projectStats.targetSdk = targetSdk;
-        analysis.projectStats.minSdk = minSdk;
-        analysis.buildConfig = { targetSdk, minSdk };
+        analysis.projectStats.targetSdk = targetSdk || 33;
+        analysis.projectStats.minSdk = minSdk || 21;
+        analysis.buildConfig.targetSdk = analysis.projectStats.targetSdk;
+        analysis.buildConfig.minSdk = analysis.projectStats.minSdk;
       } catch (error) {
         analysis.errors.push('Failed to parse Android build.gradle');
       }
@@ -167,6 +180,14 @@ export class ProjectAnalyzer {
   }
 
   private async analyzeFlutter(projectPath: string, files: string[], analysis: ProjectAnalysis): Promise<void> {
+    // Initialize build config with default flags
+    analysis.buildConfig = {
+      hasPubspec: false,
+      hasBuildGradle: false,
+      targetSdk: 33,
+      minSdk: 21
+    };
+
     // Check for essential files
     const requiredFiles = ['pubspec.yaml', 'android/build.gradle', 'lib/main.dart'];
     analysis.missingFiles = requiredFiles.filter(file => !files.some(f => f.includes(file)));
@@ -174,6 +195,7 @@ export class ProjectAnalyzer {
     // Parse pubspec.yaml
     const pubspecPath = path.join(projectPath, 'pubspec.yaml');
     if (await this.fileManager.fileExists(pubspecPath)) {
+      analysis.buildConfig.hasPubspec = true;
       try {
         const pubspecContent = await this.fileManager.readFile(pubspecPath);
         // Simple YAML parsing for dependencies
@@ -188,10 +210,24 @@ export class ProjectAnalyzer {
       }
     }
 
+    // Check for Android build files
+    const appGradlePath = path.join(projectPath, 'android/app/build.gradle');
+    if (await this.fileManager.fileExists(appGradlePath)) {
+      analysis.buildConfig.hasBuildGradle = true;
+    }
+
     analysis.projectStats.sourceFiles = files.filter(f => f.endsWith('.dart')).length;
   }
 
   private async analyzeAndroid(projectPath: string, files: string[], analysis: ProjectAnalysis): Promise<void> {
+    // Initialize build config with default flags
+    analysis.buildConfig = {
+      hasBuildGradle: false,
+      hasManifest: false,
+      targetSdk: 33,
+      minSdk: 21
+    };
+
     // Check for essential files
     const requiredFiles = ['build.gradle', 'app/build.gradle', 'app/src/main/AndroidManifest.xml'];
     analysis.missingFiles = requiredFiles.filter(file => !files.some(f => f.includes(file)));
@@ -199,43 +235,64 @@ export class ProjectAnalyzer {
     // Parse build.gradle
     const appGradlePath = path.join(projectPath, 'app/build.gradle');
     if (await this.fileManager.fileExists(appGradlePath)) {
+      analysis.buildConfig.hasBuildGradle = true;
       try {
         const gradleContent = await this.fileManager.readFile(appGradlePath);
         const targetSdk = this.extractGradleValue(gradleContent, 'targetSdkVersion');
         const minSdk = this.extractGradleValue(gradleContent, 'minSdkVersion');
         
-        analysis.projectStats.targetSdk = targetSdk;
-        analysis.projectStats.minSdk = minSdk;
-        analysis.buildConfig = { targetSdk, minSdk };
+        analysis.projectStats.targetSdk = targetSdk || 33;
+        analysis.projectStats.minSdk = minSdk || 21;
+        analysis.buildConfig.targetSdk = analysis.projectStats.targetSdk;
+        analysis.buildConfig.minSdk = analysis.projectStats.minSdk;
       } catch (error) {
         analysis.errors.push('Failed to parse build.gradle');
       }
+    }
+
+    // Check for AndroidManifest.xml
+    const manifestPath = path.join(projectPath, 'app/src/main/AndroidManifest.xml');
+    if (await this.fileManager.fileExists(manifestPath)) {
+      analysis.buildConfig.hasManifest = true;
     }
 
     analysis.projectStats.sourceFiles = files.filter(f => f.endsWith('.java') || f.endsWith('.kt')).length;
   }
 
   private async analyzeCordova(projectPath: string, files: string[], analysis: ProjectAnalysis): Promise<void> {
+    // Initialize build config with default flags
+    analysis.buildConfig = {
+      hasConfigXml: false,
+      hasWwwFolder: false,
+      appName: 'Mobile App',
+      version: '1.0.0'
+    };
+
     // Check for essential files
-    const requiredFiles = ['config.xml', 'www/index.html', 'platforms/android'];
+    const requiredFiles = ['config.xml', 'www/index.html'];
     analysis.missingFiles = requiredFiles.filter(file => !files.some(f => f.includes(file)));
 
     // Parse config.xml
     const configPath = path.join(projectPath, 'config.xml');
     if (await this.fileManager.fileExists(configPath)) {
+      analysis.buildConfig.hasConfigXml = true;
       try {
         const configContent = await this.fileManager.readFile(configPath);
         // Extract app info from config.xml
         const nameMatch = configContent.match(/<name>(.*?)<\/name>/);
         const versionMatch = configContent.match(/version="(.*?)"/);
         
-        analysis.buildConfig = {
-          appName: nameMatch ? nameMatch[1] : 'Unknown',
-          version: versionMatch ? versionMatch[1] : '1.0.0'
-        };
+        analysis.buildConfig.appName = nameMatch ? nameMatch[1] : 'Mobile App';
+        analysis.buildConfig.version = versionMatch ? versionMatch[1] : '1.0.0';
       } catch (error) {
         analysis.errors.push('Failed to parse config.xml');
       }
+    }
+
+    // Check for www folder
+    const wwwPath = path.join(projectPath, 'www');
+    if (await this.fileManager.fileExists(wwwPath)) {
+      analysis.buildConfig.hasWwwFolder = true;
     }
 
     analysis.projectStats.sourceFiles = files.filter(f => f.endsWith('.js') || f.endsWith('.html') || f.endsWith('.css')).length;
