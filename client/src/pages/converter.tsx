@@ -6,12 +6,14 @@ import { ProjectDetails } from '@/components/ProjectDetails';
 import { BuildLog } from '@/components/BuildLog';
 import { ActionButtons } from '@/components/ActionButtons';
 import { SuccessPanel } from '@/components/SuccessPanel';
+import KeystoreDialog, { KeystoreData } from '@/components/KeystoreDialog';
 import { Smartphone } from 'lucide-react';
 import { useConversion } from '@/hooks/useConversion';
 
 export default function Converter() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [projectId, setProjectId] = useState<number | undefined>(undefined);
+  const [showKeystoreDialog, setShowKeystoreDialog] = useState(false);
   const {
     currentProject,
     logs,
@@ -43,8 +45,15 @@ export default function Converter() {
   };
 
   const handleStartConversion = () => {
-    if (currentProject && currentProject.status === 'extracted') {
-      analyzeProject(currentProject.id);
+    if (currentProject && currentProject.status === 'analyzed') {
+      setShowKeystoreDialog(true);
+    }
+  };
+
+  const handleKeystoreSubmit = (keystoreData: KeystoreData) => {
+    if (currentProject) {
+      buildApk(currentProject.id, keystoreData);
+      setShowKeystoreDialog(false);
     }
   };
 
@@ -245,6 +254,13 @@ export default function Converter() {
           </div>
         </div>
       </footer>
+      
+      <KeystoreDialog
+        isOpen={showKeystoreDialog}
+        onClose={() => setShowKeystoreDialog(false)}
+        onSubmit={handleKeystoreSubmit}
+        projectName={currentProject?.name || 'Project'}
+      />
     </div>
   );
 }

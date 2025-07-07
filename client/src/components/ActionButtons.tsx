@@ -21,7 +21,7 @@ export function ActionButtons({
   analyzing, 
   building 
 }: ActionButtonsProps) {
-  const canStart = project && (project.status === 'extracted' || project.status === 'analyzed') && !analyzing && !building;
+  const canStart = project && project.status === 'analyzed' && !analyzing && !building;
   const canPause = project && (analyzing || building);
   const canStop = project && (analyzing || building);
   const canDownload = project && project.status === 'completed' && project.apkPath;
@@ -35,7 +35,7 @@ export function ActionButtons({
           disabled={!canStart}
         >
           <Play className="w-4 h-4 mr-2" />
-          Start Conversion
+          Generate APK
         </Button>
         
         <Button 

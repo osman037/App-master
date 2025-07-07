@@ -17,17 +17,22 @@ export const useConversion = (projectId?: number) => {
       const response = await apiRequest('POST', '/api/projects/upload', formData);
       return response.json();
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data) => {
       setCurrentProject(data.project);
       toast({
         title: 'Upload Successful',
-        description: 'Your project has been uploaded successfully.',
+        description: 'Project extracted successfully. Starting automatic analysis...',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-      // Return the project so parent can use it
-      return data.project;
+      
+      // Auto-start analysis if project was extracted
+      if (data.project && data.project.status === 'extracted') {
+        setTimeout(() => {
+          analyzeMutation.mutate(data.project.id);
+        }, 1000);
+      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         variant: 'destructive',
         title: 'Upload Failed',
@@ -42,14 +47,19 @@ export const useConversion = (projectId?: number) => {
       const response = await apiRequest('POST', `/api/projects/${projectId}/analyze`);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: 'Analysis Complete',
-        description: 'Project analysis completed successfully.',
+        description: 'Project structure analyzed. Ready for APK generation.',
       });
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
+      
+      // Update current project with analysis results
+      if (data.project) {
+        setCurrentProject(data.project);
+      }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         variant: 'destructive',
         title: 'Analysis Failed',
@@ -60,18 +70,26 @@ export const useConversion = (projectId?: number) => {
 
   // Build APK
   const buildMutation = useMutation({
-    mutationFn: async (projectId: number) => {
-      const response = await apiRequest('POST', `/api/projects/${projectId}/build`);
+    mutationFn: async ({ projectId, keystoreData }: { projectId: number; keystoreData?: any }) => {
+      const response = await apiRequest('POST', `/api/projects/${projectId}/build`, keystoreData);
       return response.json();
     },
-    onSuccess: () => {
-      toast({
-        title: 'Build Complete',
-        description: 'APK has been generated successfully.',
-      });
+    onSuccess: (data) => {
+      if (data.buildResult && data.buildResult.success) {
+        toast({
+          title: 'Build Complete',
+          description: 'APK has been generated successfully.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Build Failed',
+          description: data.buildResult?.errors?.join(', ') || 'Failed to build APK.',
+        });
+      }
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         variant: 'destructive',
         title: 'Build Failed',
@@ -121,8 +139,8 @@ export const useConversion = (projectId?: number) => {
     analyzeMutation.mutate(projectId);
   }, [analyzeMutation]);
 
-  const buildApk = useCallback((projectId: number) => {
-    buildMutation.mutate(projectId);
+  const buildApk = useCallback((projectId: number, keystoreData?: any) => {
+    buildMutation.mutate({ projectId, keystoreData });
   }, [buildMutation]);
 
   const downloadApk = useCallback((projectId: number, filename: string) => {
