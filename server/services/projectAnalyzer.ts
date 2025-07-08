@@ -85,18 +85,29 @@ export class ProjectAnalyzer {
 
   private async getAllFiles(directory: string, relativePath = ''): Promise<string[]> {
     const files: string[] = [];
-    const items = await this.fileManager.listFiles(path.join(directory, relativePath));
-
-    for (const item of items) {
-      const fullPath = path.join(directory, relativePath, item);
-      const stats = await this.fileManager.getFileStats(fullPath);
-
-      if (stats?.isDirectory) {
-        const subFiles = await this.getAllFiles(directory, path.join(relativePath, item));
-        files.push(...subFiles);
-      } else {
-        files.push(path.join(relativePath, item).replace(/\\/g, '/'));
+    try {
+      const currentDir = path.join(directory, relativePath);
+      
+      // Get both files and directories
+      const fileEntries = await this.fileManager.listFiles(currentDir);
+      const dirEntries = await this.fileManager.listDirectories(currentDir);
+      
+      // Add all files
+      for (const file of fileEntries) {
+        files.push(path.join(relativePath, file).replace(/\\/g, '/'));
       }
+      
+      // Recursively process directories (but limit depth to avoid infinite loops)
+      if (relativePath.split('/').length < 10) { // Max depth 10
+        for (const dir of dirEntries) {
+          if (!dir.startsWith('.') && dir !== 'node_modules' && dir !== '.git') {
+            const subFiles = await this.getAllFiles(directory, path.join(relativePath, dir));
+            files.push(...subFiles);
+          }
+        }
+      }
+    } catch (error) {
+      // Skip directories that can't be read
     }
 
     return files;
